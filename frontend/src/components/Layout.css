@@ -1,0 +1,141 @@
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Barra superior (solo móvil) */
+.layout__topbar {
+  display: none;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.layout__toggle {
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.layout__brand {
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.layout__logout {
+  margin-left: auto;
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  color: #4b5563;
+  font-size: 0.875rem;
+}
+
+.layout__logout:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.layout__logout--sidebar {
+  margin: 1rem 0 0;
+  width: 100%;
+}
+
+.layout__body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Barra lateral (escritorio) */
+.layout__sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  padding: 1.25rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.layout__sidebar-brand {
+  display: none;
+  font-weight: 700;
+  padding: 0 0.75rem 0.75rem;
+}
+
+.layout__sidebar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.layout__sidebar a {
+  display: block;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  color: #4b5563;
+  font-size: 0.95rem;
+}
+
+.layout__sidebar a:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.layout__sidebar a.active {
+  background: #eef2ff;
+  color: #3730a3;
+  font-weight: 600;
+}
+
+.layout__content {
+  flex: 1;
+  min-width: 0;
+  padding: 1.5rem;
+}
+
+/* Móvil: sidebar colapsado como menú desplegable */
+@media (max-width: 768px) {
+  .layout__topbar {
+    display: flex;
+  }
+
+  .layout__body {
+    flex-direction: column;
+  }
+
+  .layout__sidebar {
+    display: none;
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+    padding-top: 0.75rem;
+  }
+
+  .layout__sidebar--open {
+    display: flex;
+  }
+
+  .layout__sidebar-brand {
+    display: block;
+  }
+
+  .layout__content {
+    padding: 1rem;
+  }
+}
