@@ -1,21 +1,10 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import Layout from './components/Layout'
-import ProtectedRoute from './routes/ProtectedRoute'
+import Bienvenida from './pages/Bienvenida'
 
 export default function App() {
   return (
     <Routes>
-
-      {/* Rutas protegidas dentro del layout con navegación lateral */}
-      <Route
-        element={
-          <ProtectedRoute>
-            <Layout />
-          </ProtectedRoute>
-        }
-      >
-      </Route>
-
+      <Route path="/" element={<Bienvenida />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

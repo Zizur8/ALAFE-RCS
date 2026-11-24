@@ -26,6 +26,62 @@ button {
   font: inherit;
 }
 
+/* Página de bienvenida */
+.welcome {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 55%, #ecfeff 100%);
+}
+
+.welcome__card {
+  width: min(100%, 620px);
+  padding: 3rem 2rem;
+  text-align: center;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgb(15 23 42 / 0.1);
+}
+
+.welcome__label {
+  display: inline-block;
+  margin-bottom: 1rem;
+  color: #4f46e5;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+}
+
+.welcome__card h1 {
+  margin: 0;
+  color: #111827;
+  font-size: clamp(2.25rem, 8vw, 3.5rem);
+}
+
+.welcome__card p {
+  max-width: 48ch;
+  margin: 1rem auto 0;
+  color: #64748b;
+  line-height: 1.7;
+}
+
+.welcome__button {
+  margin-top: 2rem;
+  padding: 0.75rem 1.5rem;
+  color: #ffffff;
+  font-weight: 700;
+  background: #4f46e5;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.welcome__button:hover {
+  background: #4338ca;
+}
+
 /* Componentes reutilizables básicos */
 .page h1 {
   margin-top: 0;
