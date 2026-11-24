@@ -10,6 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 // ---------------------------------------------------------------------------
 // CORS: origen permitido leído de configuración (+ http://localhost:5173 en dev)
 // ---------------------------------------------------------------------------
+//Dany estuvo aqui
 var configuredOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 var allowedOrigins = configuredOrigins
     .Append("http://localhost:5173")
