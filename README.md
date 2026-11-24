@@ -1,11 +1,7 @@
 # ALAFE
 
-**ALAFE** es un monorepo que contiene la aplicación completa del proyecto:
-
 - **`/backend`** — API REST construida con **ASP.NET Core Web API (.NET 10)**, Entity Framework Core (SQL Server) y autenticación **JWT**.
 - **`/frontend`** — SPA construida con **React 19 + TypeScript + Vite** y enrutamiento con `react-router-dom`.
-
-> Estado actual: **esqueleto base (skeleton)**. La lógica de negocio se implementará por etapas.
 
 ---
 
@@ -60,22 +56,18 @@
 cd backend
 cp appsettings.Example.json appsettings.json   # y completar ConnectionStrings + Jwt
 dotnet restore
-dotnet run --launch-profile http                # → http://localhost:5000
+dotnet run --launch-profile http                
 ```
-
-- Puerto HTTP: **`http://localhost:5000`** (definido en `backend/Properties/launchSettings.json`).
-- Health check: `GET http://localhost:5000/api/health` → `{ "status": "ok" }`.
 
 ### 2. Frontend (SPA)
 
 ```bash
 cd frontend
-cp .env.example .env        # VITE_API_URL=http://localhost:5000/api
+cp .env.example .env        
 npm ci
-npm run dev                 # → http://localhost:5173
+npm run dev                 
 ```
 
-- Puerto de desarrollo Vite: **`http://localhost:5173`**.
 
 ### 3. Compilación de verificación
 
@@ -105,17 +97,3 @@ npm run build                          # desde /frontend
 | `build-frontend` | Node.js LTS | `npm ci` + `npm run build` |
 
 ---
-
-## Enlaces de publicación
-
-_Completar cuando se publiquen los entornos:_
-
-- **Frontend (Vercel):** https://___-frontend.vercel.app
-- **API publicada:** https://___-api.example.com
-- **Documentación OpenAPI (Swagger):** https://___-api.example.com/openapi
-
----
-
-## Diagramas de arquitectura
-
-Los diagramas **C4 de Contexto y Contenedores** se encuentran en [`docs/c4/`](docs/c4/README.md).
