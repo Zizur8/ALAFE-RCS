@@ -5,7 +5,6 @@ import ProtectedRoute from './routes/ProtectedRoute'
 export default function App() {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
 
       {/* Rutas protegidas dentro del layout con navegación lateral */}
       <Route
@@ -15,7 +14,6 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        <Route path="/" element={<MainAppAgenda />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
