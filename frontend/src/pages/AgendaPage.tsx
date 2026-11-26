@@ -4,6 +4,11 @@ import EventActionDialog from '../components/agenda/EventActionDialog'
 import EventComposer from '../components/agenda/EventComposer'
 import AgendaSettings, { type AgendaProfile, type WorkspaceSettings } from '../components/agenda/AgendaSettings'
 import type { DemoEvent, EventAction } from '../components/agenda/types'
+import ClientsModule from '../components/modules/ClientsModule'
+import MovementsModule from '../components/modules/MovementsModule'
+import ReportsModule from '../components/modules/ReportsModule'
+import UsersModule from '../components/modules/UsersModule'
+import '../components/modules/Modules.css'
 
 type Theme = 'light' | 'dark'
 type ModuleId = 'agenda' | 'clientes' | 'movimientos' | 'reportes' | 'usuarios' | 'configuracion'
@@ -400,7 +405,7 @@ function AgendaWorkspace({ theme, onToggleTheme }: AgendaPageProps) {
           <Link className="exit-demo" to="/" aria-label="Salir al inicio" title="Salir al inicio"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 5H5.8A1.8 1.8 0 0 0 4 6.8v10.4A1.8 1.8 0 0 0 5.8 19H10M14 8l4 4-4 4M18 12H8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></Link>
         </header>
 
-        <main className="agenda-content">
+        <main className={`agenda-content${activeModule !== 'agenda' && activeModule !== 'configuracion' ? ' agenda-content--module' : ''}`}>
           {activeModule === 'agenda' ? (
             <>
               <div className="agenda-page-heading"><div><span className="section-kicker">AGENDA</span><div className="agenda-title-row"><h1>{activeAgenda.name || 'Agenda sin nombre'}</h1><div className="agenda-switcher" ref={agendaMenuRef}><button type="button" className="agenda-switcher__trigger" aria-label="Cambiar agenda" aria-expanded={agendaMenuOpen} aria-haspopup="menu" onClick={() => setAgendaMenuOpen((open) => !open)}><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 9.5 12 14l5-4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg></button>{agendaMenuOpen && <div className="agenda-switcher__menu" role="menu" aria-label="Cambiar agenda">{agendas.map((agenda) => <button type="button" role="menuitemradio" aria-checked={agenda.id === activeAgenda.id} className={`agenda-switcher__option${agenda.id === activeAgenda.id ? ' is-active' : ''}`} key={agenda.id} onClick={() => selectAgenda(agenda.id)}><span className="agenda-switcher__option-icon" aria-hidden="true">▦</span><span><strong>{agenda.name || 'Agenda sin nombre'}</strong><small>{agenda.business}</small></span>{agenda.id === activeAgenda.id && <i aria-label="Agenda actual">✓</i>}</button>)}</div>}</div></div></div><button className="new-event-button" type="button" onClick={() => openNewEvent(selectedDate)}><span aria-hidden="true">＋</span> Nuevo evento</button></div>
@@ -417,11 +422,17 @@ function AgendaWorkspace({ theme, onToggleTheme }: AgendaPageProps) {
               <EventDetails date={selectedDate} events={selectedEvents} selectedEventId={selectedEventId} focusRequest={eventFocusRequest} onNewEvent={openNewEvent} onEdit={editEvent} onAction={openEventAction} />
               </div>
             </>
+          ) : activeModule === 'clientes' ? (
+            <ClientsModule />
+          ) : activeModule === 'movimientos' ? (
+            <MovementsModule />
+          ) : activeModule === 'reportes' ? (
+            <ReportsModule />
+          ) : activeModule === 'usuarios' ? (
+            <UsersModule />
           ) : activeModule === 'configuracion' ? (
             <AgendaSettings agendas={agendas} setAgendas={setAgendas} workspace={workspaceSettings} setWorkspace={setWorkspaceSettings} />
-          ) : (
-            <section className="module-placeholder"><span className="module-placeholder__symbol">{MODULES.find((module) => module.id === activeModule)?.icon}</span><span className="section-kicker">MÓDULO ALAFE</span><h1>{MODULES.find((module) => module.id === activeModule)?.label}</h1><p>Consulta la información de {MODULES.find((module) => module.id === activeModule)?.label.toLocaleLowerCase('es-MX')} relacionada con tus eventos.</p><button type="button" className="today-button" onClick={() => setActiveModule('agenda')}>Volver a la agenda</button></section>
-          )}
+          ) : null}
         </main>
       </div>
       {eventDialogOpen && <EventComposer date={selectedDate} initialRange={initialRange} event={composerEvent} defaultEventName={activeAgenda.defaultEventName} conflictRanges={!composerEvent ? events.map((existing) => ({ startDate: existing.decorationDate ?? existing.startDate, endDate: existing.endDate, start: existing.decorationStart ?? existing.start, end: existing.end })) : undefined} onClose={() => setEventDialogOpen(false)} />}
