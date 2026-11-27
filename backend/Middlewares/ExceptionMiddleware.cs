@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Alafe.Api.Services;
 
 namespace Alafe.Api.Middlewares;
 
@@ -42,6 +43,8 @@ public class ExceptionMiddleware
         {
             KeyNotFoundException => (int)HttpStatusCode.NotFound,
             UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
+            ForbiddenException => (int)HttpStatusCode.Forbidden,
+            ConflictException => (int)HttpStatusCode.Conflict,
             ArgumentException => (int)HttpStatusCode.BadRequest,
             _ => (int)HttpStatusCode.InternalServerError
         };
