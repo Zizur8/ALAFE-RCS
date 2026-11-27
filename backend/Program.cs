@@ -1,6 +1,9 @@
 using System.Text;
 using Alafe.Api.Data;
+using Alafe.Api.Data.Seed;
 using Alafe.Api.Middlewares;
+using Alafe.Api.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -30,6 +33,8 @@ builder.Services.AddCors(options =>
 // ---------------------------------------------------------------------------
 builder.Services.AddDbContext<AlafeDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddScoped<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
+builder.Services.AddScoped<DatabaseSeeder>();
 
 // ---------------------------------------------------------------------------
 // Autenticación JWT (clave / issuer / audience desde configuración "Jwt")
@@ -64,6 +69,13 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
+    await seeder.SeedAsync(development: true);
+}
 
 // Middleware global de errores (JSON uniforme) — siempre primero.
 app.UseMiddleware<ExceptionMiddleware>();

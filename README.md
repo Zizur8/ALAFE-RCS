@@ -106,6 +106,7 @@ npm run build                          # desde /frontend
 
 ---
 
+<<<<<<< Updated upstream
 ## Enlaces de publicación
 
 _Completar cuando se publiquen los entornos:_
@@ -119,3 +120,10 @@ _Completar cuando se publiquen los entornos:_
 ## Diagramas de arquitectura
 
 Los diagramas **C4 de Contexto y Contenedores** se encuentran en [`docs/c4/`](docs/c4/README.md).
+=======
+## Estado de los módulos
+
+- **Reportes:** módulo en *stand by*. Su implementación queda pendiente debido a la complejidad que implica definir sus necesidades, diseñar la experiencia y las visualizaciones adecuadas, y al tiempo disponible para desarrollarlo con el nivel de calidad esperado. Se retomará cuando se pueda planificar y diseñar con mayor detalle.
+
+---
+>>>>>>> Stashed changes
