@@ -1,0 +1,2 @@
+namespace Alafe.Api.Models;
+public class RefreshToken { public int Id { get; set; } public int UsuarioId { get; set; } public string TokenHash { get; set; } = ""; public bool Recordarme { get; set; } public DateTime ExpiraEn { get; set; } public DateTime CreadoEn { get; set; } public DateTime? RevocadoEn { get; set; } public string? ReemplazadoPorTokenHash { get; set; } public string? IpCreacion { get; set; } public string? UserAgent { get; set; } public Usuario? Usuario { get; set; } }

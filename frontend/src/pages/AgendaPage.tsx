@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import EventActionDialog from '../components/agenda/EventActionDialog'
 import EventComposer from '../components/agenda/EventComposer'
-import AgendaSettings, { type AgendaProfile, type WorkspaceSettings } from '../components/agenda/AgendaSettings'
+import AgendaSettings, { DEFAULT_WEEKLY_SCHEDULE, WEEKDAY_KEYS, type AgendaProfile, type WorkspaceSettings } from '../components/agenda/AgendaSettings'
 import type { DemoEvent, EventAction } from '../components/agenda/types'
 import ClientsModule from '../components/modules/ClientsModule'
 import MovementsModule from '../components/modules/MovementsModule'
@@ -289,8 +289,8 @@ function AgendaWorkspace({ theme, onToggleTheme }: AgendaPageProps) {
   const [eventFocusRequest, setEventFocusRequest] = useState(0)
   const [actionDialog, setActionDialog] = useState<{ action: EventAction; event: DemoEvent } | null>(null)
   const [agendas, setAgendas] = useState<AgendaProfile[]>([
-    { id: 'alberca-las-palmas', name: 'Alberca Las Palmas', business: 'Alberca y eventos', defaultEventName: 'Nueva reserva', currency: 'MXN', showGeneralNote: true, generalNote: 'Recordatorio: confirmar el montaje y el acceso con recepción antes de cada evento.' },
-    { id: 'salon-magnolia', name: 'Salón Magnolia', business: 'Salón de eventos', defaultEventName: 'Nuevo evento', currency: 'MXN', showGeneralNote: true, generalNote: 'Aviso: el montaje de decoración debe coordinarse con el equipo del salón.' },
+    { id: 'alberca-las-palmas', name: 'Alberca Las Palmas', business: 'Alberca y eventos', defaultEventName: 'Nueva reserva', currency: 'MXN', showGeneralNote: true, generalNote: 'Recordatorio: confirmar el montaje y el acceso con recepción antes de cada evento.', weeklySchedule: structuredClone(DEFAULT_WEEKLY_SCHEDULE) },
+    { id: 'salon-magnolia', name: 'Salón Magnolia', business: 'Salón de eventos', defaultEventName: 'Nuevo evento', currency: 'MXN', showGeneralNote: true, generalNote: 'Aviso: el montaje de decoración debe coordinarse con el equipo del salón.', weeklySchedule: structuredClone(DEFAULT_WEEKLY_SCHEDULE) },
   ])
   const [activeAgendaId, setActiveAgendaId] = useState('alberca-las-palmas')
   const [agendaMenuOpen, setAgendaMenuOpen] = useState(false)
@@ -393,6 +393,10 @@ function AgendaWorkspace({ theme, onToggleTheme }: AgendaPageProps) {
   const initialRange = selectedRange
     ? { startDate: toDateKey(selectedRange.start), endDate: toDateKey(selectedRange.end) }
     : { startDate: toDateKey(selectedDate), endDate: toDateKey(selectedDate) }
+  const startDay = new Date(`${initialRange.startDate}T12:00:00`).getDay()
+  const endDay = new Date(`${initialRange.endDate}T12:00:00`).getDay()
+  const defaultStartTime = activeAgenda.weeklySchedule[WEEKDAY_KEYS[startDay]].start
+  const defaultEndTime = activeAgenda.weeklySchedule[WEEKDAY_KEYS[endDay]].end
 
   return (
     <div className="agenda-shell">
@@ -435,7 +439,7 @@ function AgendaWorkspace({ theme, onToggleTheme }: AgendaPageProps) {
           ) : null}
         </main>
       </div>
-      {eventDialogOpen && <EventComposer date={selectedDate} initialRange={initialRange} event={composerEvent} defaultEventName={activeAgenda.defaultEventName} conflictRanges={!composerEvent ? events.map((existing) => ({ startDate: existing.decorationDate ?? existing.startDate, endDate: existing.endDate, start: existing.decorationStart ?? existing.start, end: existing.end })) : undefined} onClose={() => setEventDialogOpen(false)} />}
+      {eventDialogOpen && <EventComposer date={selectedDate} initialRange={initialRange} defaultStartTime={defaultStartTime} defaultEndTime={defaultEndTime} event={composerEvent} defaultEventName={activeAgenda.defaultEventName} conflictRanges={!composerEvent ? events.map((existing) => ({ startDate: existing.decorationDate ?? existing.startDate, endDate: existing.endDate, start: existing.decorationStart ?? existing.start, end: existing.end })) : undefined} onClose={() => setEventDialogOpen(false)} />}
       {actionDialog && <EventActionDialog action={actionDialog.action} event={actionDialog.event} onClose={() => setActionDialog(null)} />}
     </div>
   )

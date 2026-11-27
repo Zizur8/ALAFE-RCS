@@ -187,6 +187,16 @@
 .settings-toggle small { color: var(--muted); font-size: 10px; font-weight: 400; }
 .settings-toggle input { width: 18px; height: 18px; accent-color: var(--accent-strong); }
 .settings-note-field { grid-column: 1 / -1; }
+.settings-schedule-control { min-height: 54px; padding: 8px 11px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--line); border-radius: 8px; }
+.settings-schedule-control > span { display: flex; flex-direction: column; gap: 4px; }
+.settings-schedule-control strong { color: var(--ink-strong); font-size: 11px; }
+.settings-schedule-control small { color: var(--muted); font-size: 10px; }
+.schedule-dialog { width: min(100%, 560px); }
+.schedule-days { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+.schedule-day { display: grid; grid-template-columns: minmax(90px, 1fr) 1fr 1fr; align-items: center; gap: 12px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; }
+.schedule-day > strong { color: var(--ink-strong); font-size: 12px; }
+.schedule-day label { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 10px; }
+.schedule-day input { width: 100%; min-width: 0; min-height: 36px; padding: 0 7px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink-strong); background: var(--field); font: 12px 'DM Sans', sans-serif; }
 .agenda-modal-backdrop { position: fixed; inset: 0; z-index: 30; padding: 18px; display: grid; place-items: center; background: rgb(15 25 19 / 54%); backdrop-filter: blur(3px); }
 .event-dialog { width: min(100%, 440px); max-height: min(90vh, 700px); overflow-y: auto; padding: 24px; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); box-shadow: var(--shadow); }
 .event-dialog__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; }
@@ -421,6 +431,11 @@
   .settings-form-grid { grid-template-columns: 1fr; gap: 12px; }
   .settings-form-grid--agenda { padding-right: 10px; padding-left: 10px; }
   .settings-note-field { grid-column: auto; }
+  .settings-schedule-control { align-items: flex-start; flex-direction: column; }
+  .settings-schedule-control .cancel-button { width: 100%; }
+  .schedule-day { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .schedule-day > strong { grid-column: 1 / -1; }
+  .schedule-day label { justify-content: space-between; }
   .calendar-panel { padding: 13px 11px 11px; border-radius: 12px; }
   .calendar-panel__toolbar { min-height: 35px; margin-bottom: 10px; }
   .range-selection-control { min-height: 31px; font-size: 7px; }
