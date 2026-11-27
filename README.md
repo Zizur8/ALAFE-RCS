@@ -97,3 +97,25 @@ npm run build                          # desde /frontend
 | `build-frontend` | Node.js LTS | `npm ci` + `npm run build` |
 
 ---
+
+## Enlaces de publicación
+
+_Completar cuando se publiquen los entornos:_
+
+- **Frontend (Vercel):** https://___-frontend.vercel.app
+- **API publicada:** https://___-api.example.com
+- **Documentación OpenAPI (Swagger):** https://___-api.example.com/openapi
+
+---
+
+## Diagramas de arquitectura
+
+Los diagramas **C4 de Contexto y Contenedores** se encuentran en [`docs/c4/`](docs/c4/README.md).
+=======
+## Estado de los módulos
+
+- **Reportes:** módulo en *stand by*. Su implementación queda pendiente debido a la complejidad que implica definir sus necesidades, diseñar la experiencia y las visualizaciones adecuadas, y al tiempo disponible para desarrollarlo con el nivel de calidad esperado. Se retomará cuando se pueda planificar y diseñar con mayor detalle.
+
+---
+=======
+

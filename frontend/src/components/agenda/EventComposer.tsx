@@ -6,6 +6,8 @@ interface EventComposerProps {
   initialRange: { startDate: string; endDate: string }
   event?: DemoEvent
   defaultEventName?: string
+  defaultStartTime: string
+  defaultEndTime: string
   conflictRanges?: { startDate: string; endDate: string; start: string; end: string }[]
   onClose: () => void
 }
@@ -70,14 +72,14 @@ function oneHourBefore(value: string): string {
   return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
 }
 
-function makeInitialForm(event: DemoEvent | undefined, initialRange: EventComposerProps['initialRange'], defaultEventName: string): EventForm {
+function makeInitialForm(event: DemoEvent | undefined, initialRange: EventComposerProps['initialRange'], defaultEventName: string, defaultStartTime: string, defaultEndTime: string): EventForm {
   const [firstName = '', lastName = '', secondLastName = ''] = event?.client.split(' ') ?? []
   return {
     title: event?.title ?? defaultEventName,
     startDate: event?.startDate ?? initialRange.startDate,
     endDate: event?.endDate ?? initialRange.endDate,
-    start: event?.start ?? '16:00',
-    end: event?.end ?? '23:00',
+    start: event?.start ?? defaultStartTime,
+    end: event?.end ?? defaultEndTime,
     hasDecoration: event?.decoration.startsWith('Decoración') ?? false,
     decorationDate: event?.decorationDate ?? event?.startDate ?? initialRange.startDate,
     decorationTime: event?.decoration.startsWith('Decoración') ? event.decorationStart ?? oneHourBefore(event.start) : '',
@@ -121,8 +123,8 @@ function DateField({ value, onChange, min, max, label }: { value: string; onChan
   return <span className="date-input-control"><span className="date-input-display" aria-hidden="true">{formatDateLabel(value)}</span><span className="date-input-icon" aria-hidden="true">▦</span><input className="date-input-native" type="date" aria-label={label} value={value} min={min} max={max} required onChange={(event) => onChange(event.target.value)} /></span>
 }
 
-export default function EventComposer({ date, initialRange, event, defaultEventName = '', conflictRanges, onClose }: EventComposerProps) {
-  const [form, setForm] = useState<EventForm>(() => makeInitialForm(event, initialRange, defaultEventName))
+export default function EventComposer({ date, initialRange, defaultStartTime, defaultEndTime, event, defaultEventName = '', conflictRanges, onClose }: EventComposerProps) {
+  const [form, setForm] = useState<EventForm>(() => makeInitialForm(event, initialRange, defaultEventName, defaultStartTime, defaultEndTime))
   const [dateRangeMode, setDateRangeMode] = useState(() => (event?.startDate ?? initialRange.startDate) !== (event?.endDate ?? initialRange.endDate))
   const [errors, setErrors] = useState<string[]>([])
   const [notice, setNotice] = useState('')

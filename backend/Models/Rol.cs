@@ -1,0 +1,2 @@
+namespace Alafe.Api.Models;
+public class Rol { public int Id { get; set; } public int PropietarioId { get; set; } public string Nombre { get; set; } = ""; public string? Descripcion { get; set; } public bool EsSistema { get; set; } public bool Activo { get; set; } = true; public DateTime FechaCreacion { get; set; } public DateTime? FechaActualizacion { get; set; } public Propietario? Propietario { get; set; } public ICollection<RolPermiso> RolPermisos { get; set; } = new List<RolPermiso>(); public ICollection<Usuario> Usuarios { get; set; } = new List<Usuario>(); }

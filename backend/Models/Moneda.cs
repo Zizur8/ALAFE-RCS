@@ -1,0 +1,2 @@
+namespace Alafe.Api.Models;
+public class Moneda { public string Codigo { get; set; } = ""; public string Nombre { get; set; } = ""; public string Simbolo { get; set; } = ""; public bool HabilitadaEnAgenda { get; set; } public bool HabilitadaEnMovimiento { get; set; } = true; public bool Activo { get; set; } = true; public ICollection<Pais> Paises { get; set; } = new List<Pais>(); public ICollection<Plan> Planes { get; set; } = new List<Plan>(); public ICollection<Agenda> Agendas { get; set; } = new List<Agenda>(); }
