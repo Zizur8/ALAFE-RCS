@@ -13,8 +13,18 @@ namespace Alafe.Api.Controllers;
 public sealed class UsuariosController(IUsuarioService usuarios) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<UsuarioDto>>> GetUsuarios(CancellationToken ct) =>
-        Ok(await usuarios.GetUsuariosAsync(ct));
+    public async Task<ActionResult<UsuariosPaginadosDto>> GetUsuarios(
+        [FromQuery] int pagina = 1,
+        [FromQuery] int tamanoPagina = 20,
+        [FromQuery] string? busqueda = null,
+        [FromQuery] bool? activo = null,
+        [FromQuery] int? rolId = null,
+        CancellationToken ct = default)
+    {
+        pagina = Math.Max(1, pagina);
+        tamanoPagina = Math.Clamp(tamanoPagina, 1, 100);
+        return Ok(await usuarios.GetUsuariosAsync(pagina, tamanoPagina, busqueda, activo, rolId, ct));
+    }
 
     [HttpPost]
     public async Task<ActionResult<UsuarioDto>> CreateUsuario(CrearUsuarioRequest request, CancellationToken ct)

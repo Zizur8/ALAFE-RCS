@@ -15,3 +15,43 @@ public sealed class UsuarioConfiguration : IEntityTypeConfiguration<Usuario> { p
 public sealed class AgendaConfiguration : IEntityTypeConfiguration<Agenda> { public void Configure(EntityTypeBuilder<Agenda> b) { b.ToTable("Agendas",t=>{t.HasCheckConstraint("CK_Agendas_Horario","HoraCierreDefault > HoraAperturaDefault");t.HasCheckConstraint("CK_Agendas_TelefonoPar","(TelefonoPaisCodigo IS NULL AND TelefonoContacto IS NULL) OR (TelefonoPaisCodigo IS NOT NULL AND TelefonoContacto IS NOT NULL)");}); b.HasKey(x=>x.Id).HasName("PK_Agendas"); b.Property(x=>x.Nombre).HasMaxLength(150).IsRequired(); b.Property(x=>x.MonedaCodigo).HasColumnType("char(3)").HasMaxLength(3).IsFixedLength().IsUnicode(false).HasDefaultValue("MXN"); b.Property(x=>x.ZonaHoraria).HasMaxLength(64).IsRequired().HasDefaultValue("America/Matamoros"); b.Property(x=>x.NombreEventoDefault).HasMaxLength(150).HasDefaultValue("Evento"); b.Property(x=>x.MostrarNotaGeneral).HasDefaultValue(false); b.Property(x=>x.NotaGeneral).HasMaxLength(1000); b.Property(x=>x.NotaGeneralActualizadaEn).HasPrecision(3); b.Property(x=>x.TelefonoPaisCodigo).HasColumnType("char(2)").HasMaxLength(2).IsFixedLength().IsUnicode(false); b.Property(x=>x.TelefonoContacto).HasMaxLength(20); b.Property(x=>x.DireccionNegocio).HasMaxLength(200); b.Property(x=>x.HoraAperturaDefault).HasColumnType("time(0)").HasDefaultValue(new TimeSpan(9,0,0)); b.Property(x=>x.HoraCierreDefault).HasColumnType("time(0)").HasDefaultValue(new TimeSpan(22,0,0)); b.Property(x=>x.Activo).HasDefaultValue(true); b.Property(x=>x.FechaCreacion).HasPrecision(3).HasDefaultValueSql("SYSUTCDATETIME()"); b.Property(x=>x.FechaActualizacion).HasPrecision(3); b.HasIndex(x=>new{x.PropietarioId,x.Nombre}).IsUnique().HasDatabaseName("UQ_Agendas_Propietario_Nombre"); b.HasIndex(x=>new{x.PropietarioId,x.Activo}).HasDatabaseName("IX_Agendas_PropietarioId"); b.HasOne(x=>x.Propietario).WithMany(x=>x.Agendas).HasForeignKey(x=>x.PropietarioId).OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_Agendas_Propietarios"); b.HasOne(x=>x.Moneda).WithMany(x=>x.Agendas).HasForeignKey(x=>x.MonedaCodigo).OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_Agendas_Monedas"); b.HasOne(x=>x.TelefonoPais).WithMany(x=>x.AgendasTelefono).HasForeignKey(x=>x.TelefonoPaisCodigo).OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_Agendas_TelefonoPais"); b.HasOne(x=>x.NotaGeneralUsuario).WithMany(x=>x.AgendasNotaGeneral).HasForeignKey(x=>x.NotaGeneralUsuarioId).OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_Agendas_NotaGeneralUsuario"); } }
 public sealed class UsuarioAgendaConfiguration : IEntityTypeConfiguration<UsuarioAgenda> { public void Configure(EntityTypeBuilder<UsuarioAgenda> b) { b.ToTable("UsuarioAgendas"); b.HasKey(x=>new{x.UsuarioId,x.AgendaId}).HasName("PK_UsuarioAgendas"); b.Property(x=>x.FechaAsignacion).HasPrecision(3).HasDefaultValueSql("SYSUTCDATETIME()"); b.HasIndex(x=>x.AgendaId).HasDatabaseName("IX_UsuarioAgendas_AgendaId"); b.HasOne(x=>x.Usuario).WithMany(x=>x.UsuarioAgendas).HasForeignKey(x=>x.UsuarioId).OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_UsuarioAgendas_Usuarios"); b.HasOne(x=>x.Agenda).WithMany(x=>x.UsuarioAgendas).HasForeignKey(x=>x.AgendaId).OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_UsuarioAgendas_Agendas"); } }
 public sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken> { public void Configure(EntityTypeBuilder<RefreshToken> b) { b.ToTable("RefreshTokens"); b.HasKey(x=>x.Id).HasName("PK_RefreshTokens"); b.Property(x=>x.TokenHash).HasMaxLength(128).IsRequired(); b.Property(x=>x.Recordarme).HasDefaultValue(false); b.Property(x=>x.ExpiraEn).HasPrecision(3); b.Property(x=>x.CreadoEn).HasPrecision(3).HasDefaultValueSql("SYSUTCDATETIME()"); b.Property(x=>x.RevocadoEn).HasPrecision(3); b.Property(x=>x.ReemplazadoPorTokenHash).HasMaxLength(128); b.Property(x=>x.IpCreacion).HasMaxLength(45); b.Property(x=>x.UserAgent).HasMaxLength(256); b.HasIndex(x=>x.TokenHash).IsUnique().HasDatabaseName("UQ_RefreshTokens_TokenHash"); b.HasIndex(x=>new{x.UsuarioId,x.ExpiraEn}).HasFilter("[RevocadoEn] IS NULL").HasDatabaseName("IX_RefreshTokens_Usuario_Activos"); b.HasOne(x=>x.Usuario).WithMany(x=>x.RefreshTokens).HasForeignKey(x=>x.UsuarioId).OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_RefreshTokens_Usuarios"); } }
+
+public sealed class ClienteConfiguration : IEntityTypeConfiguration<Cliente>
+{
+    public void Configure(EntityTypeBuilder<Cliente> b)
+    {
+        b.ToTable("Clientes"); b.HasKey(x => x.Id).HasName("PK_Clientes");
+        b.Property(x => x.NombreCompleto).HasMaxLength(150).IsRequired();
+        b.Property(x => x.TelefonoPaisCodigo).HasColumnType("char(2)").HasMaxLength(2).IsFixedLength().IsUnicode(false).HasDefaultValue("MX");
+        b.Property(x => x.Telefono).HasMaxLength(30).IsRequired(); b.Property(x => x.Correo).HasMaxLength(180);
+        b.Property(x => x.Direccion).HasMaxLength(250); b.Property(x => x.Notas).HasMaxLength(500);
+        b.Property(x => x.Activo).HasDefaultValue(true); b.Property(x => x.FechaCreacion).HasDefaultValueSql("SYSUTCDATETIME()");
+        b.HasIndex(x => new { x.PropietarioId, x.Activo, x.NombreCompleto }).HasDatabaseName("IX_Clientes_Propietario_Activo_Nombre");
+        b.HasOne(x => x.Propietario).WithMany().HasForeignKey(x => x.PropietarioId).OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_Clientes_Propietarios");
+        b.HasOne(x => x.TelefonoPais).WithMany(x => x.ClientesTelefono).HasForeignKey(x => x.TelefonoPaisCodigo).OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_Clientes_TelefonoPais");
+    }
+}
+
+public sealed class EtiquetaClienteConfiguration : IEntityTypeConfiguration<EtiquetaCliente>
+{
+    public void Configure(EntityTypeBuilder<EtiquetaCliente> b)
+    {
+        b.ToTable("EtiquetasCliente", t => t.HasCheckConstraint("CK_EtiquetasCliente_Tono", "Tono IN ('accent','success','warning','danger','info','neutral')"));
+        b.HasKey(x => x.Id).HasName("PK_EtiquetasCliente"); b.Property(x => x.Nombre).HasMaxLength(60).IsRequired();
+        b.Property(x => x.Descripcion).HasMaxLength(200); b.Property(x => x.Tono).HasColumnType("varchar(20)").HasMaxLength(20).IsUnicode(false).HasDefaultValue("neutral");
+        b.Property(x => x.Activo).HasDefaultValue(true); b.Property(x => x.FechaCreacion).HasDefaultValueSql("SYSUTCDATETIME()");
+        b.HasIndex(x => new { x.PropietarioId, x.Nombre }).IsUnique().HasDatabaseName("UQ_EtiquetasCliente_Propietario_Nombre");
+        b.HasOne(x => x.Propietario).WithMany().HasForeignKey(x => x.PropietarioId).OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_EtiquetasCliente_Propietarios");
+    }
+}
+
+public sealed class ClienteEtiquetaConfiguration : IEntityTypeConfiguration<ClienteEtiqueta>
+{
+    public void Configure(EntityTypeBuilder<ClienteEtiqueta> b)
+    {
+        b.ToTable("ClienteEtiquetas"); b.HasKey(x => new { x.ClienteId, x.EtiquetaId }).HasName("PK_ClienteEtiquetas");
+        b.HasIndex(x => x.EtiquetaId).HasDatabaseName("IX_ClienteEtiquetas_EtiquetaId");
+        b.HasOne(x => x.Cliente).WithMany(x => x.ClienteEtiquetas).HasForeignKey(x => x.ClienteId).OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_ClienteEtiquetas_Clientes");
+        b.HasOne(x => x.Etiqueta).WithMany(x => x.ClienteEtiquetas).HasForeignKey(x => x.EtiquetaId).OnDelete(DeleteBehavior.NoAction).HasConstraintName("FK_ClienteEtiquetas_EtiquetasCliente");
+    }
+}

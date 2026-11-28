@@ -26,6 +26,9 @@ public class AlafeDbContext : DbContext
     public DbSet<Agenda> Agendas => Set<Agenda>();
     public DbSet<UsuarioAgenda> UsuarioAgendas => Set<UsuarioAgenda>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<Cliente> Clientes => Set<Cliente>();
+    public DbSet<EtiquetaCliente> EtiquetasCliente => Set<EtiquetaCliente>();
+    public DbSet<ClienteEtiqueta> ClienteEtiquetas => Set<ClienteEtiqueta>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

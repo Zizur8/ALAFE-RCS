@@ -11,13 +11,52 @@ namespace Alafe.Api.Services;
 public sealed class UsuarioService(AlafeDbContext db, ICurrentUserService currentUser,
     IPasswordHasher<Usuario> passwordHasher) : IUsuarioService
 {
-    public async Task<IReadOnlyList<UsuarioDto>> GetUsuariosAsync(CancellationToken cancellationToken = default)
+    public async Task<UsuariosPaginadosDto> GetUsuariosAsync(int pagina, int tamanoPagina, string? busqueda,
+        bool? activo, int? rolId, CancellationToken cancellationToken = default)
     {
         var ownerId = OwnerId;
-        var users = await db.Usuarios.AsNoTracking().Where(u => u.PropietarioId == ownerId)
-            .Include(u => u.Rol).Include(u => u.UsuarioAgendas).ThenInclude(ua => ua.Agenda)
-            .OrderBy(u => u.NombreCompleto).ToListAsync(cancellationToken);
-        return users.Select(ToDto).ToList();
+        var ownerUsers = db.Usuarios.AsNoTracking().Where(u => u.PropietarioId == ownerId);
+
+        var aggregate = await ownerUsers.GroupBy(user => user.PropietarioId)
+            .Select(group => new
+            {
+                Total = group.Count(),
+                Activos = group.Sum(user => user.Activo ? 1 : 0)
+            })
+            .SingleOrDefaultAsync(cancellationToken);
+        var totalUsuarios = aggregate?.Total ?? 0;
+        var activos = aggregate?.Activos ?? 0;
+        var estadisticas = new UsuariosEstadisticasDto(totalUsuarios, activos, totalUsuarios - activos);
+
+        var filteredUsers = ownerUsers;
+        var term = busqueda?.Trim();
+        if (!string.IsNullOrEmpty(term))
+            filteredUsers = filteredUsers.Where(user => user.NombreCompleto.Contains(term) || user.Correo.Contains(term));
+        if (activo.HasValue)
+            filteredUsers = filteredUsers.Where(user => user.Activo == activo.Value);
+        if (rolId.HasValue)
+            filteredUsers = filteredUsers.Where(user => user.RolId == rolId.Value);
+
+        var totalItems = await filteredUsers.CountAsync(cancellationToken);
+        var totalPaginas = totalItems == 0 ? 0 : (int)Math.Ceiling(totalItems / (double)tamanoPagina);
+        if (totalPaginas == 0)
+            pagina = 1;
+        else if (pagina > totalPaginas)
+            pagina = totalPaginas;
+
+        var users = await filteredUsers
+            .OrderByDescending(user => user.EsPropietario)
+            .ThenBy(user => user.NombreCompleto)
+            .ThenBy(user => user.Id)
+            .Skip((pagina - 1) * tamanoPagina)
+            .Take(tamanoPagina)
+            .Include(user => user.Rol)
+            .Include(user => user.UsuarioAgendas).ThenInclude(userAgenda => userAgenda.Agenda)
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
+
+        return new UsuariosPaginadosDto(users.Select(ToDto).ToList(), pagina, tamanoPagina, totalItems, totalPaginas,
+            pagina > 1, pagina < totalPaginas, estadisticas);
     }
 
     public async Task<UsuarioDto> CreateUsuarioAsync(CrearUsuarioRequest request, CancellationToken cancellationToken = default)
