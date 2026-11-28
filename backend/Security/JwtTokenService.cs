@@ -20,11 +20,7 @@ public sealed class JwtTokenService(IOptions<JwtOptions> options) : IJwtTokenSer
         var claims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Sub, usuario.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.Email, usuario.Correo),
-            new Claim("propietarioId", usuario.PropietarioId.ToString()),
-            new Claim("rolId", usuario.RolId.ToString()),
-            new Claim("esPropietario", usuario.EsPropietario.ToString().ToLowerInvariant()),
-            new Claim("tokenVersion", usuario.TokenVersion.ToString()),
+            new Claim("tv", usuario.TokenVersion.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
         };
         var credentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key)), SecurityAlgorithms.HmacSha256);

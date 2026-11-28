@@ -8,9 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
-using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -65,6 +63,7 @@ builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -81,8 +80,8 @@ builder.Services
             OnTokenValidated = async context =>
             {
                 var principal = context.Principal;
-                var subject = principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ?? principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                var versionClaim = principal?.FindFirst("tokenVersion")?.Value;
+                var subject = principal?.FindFirst("sub")?.Value;
+                var versionClaim = principal?.FindFirst("tv")?.Value;
                 if (!int.TryParse(subject, out var userId) || !int.TryParse(versionClaim, out var tokenVersion))
                 {
                     context.Fail("Sesión inválida o revocada.");
@@ -90,9 +89,16 @@ builder.Services
                 }
 
                 var db = context.HttpContext.RequestServices.GetRequiredService<AlafeDbContext>();
-                var valid = await db.Usuarios.AsNoTracking().AnyAsync(u => u.Id == userId && u.Activo && u.TokenVersion == tokenVersion &&
-                    u.Propietario != null && u.Propietario.Activo);
-                if (!valid) context.Fail("Sesión inválida o revocada.");
+                var verifiedContext = await db.Usuarios.AsNoTracking()
+                    .Where(u => u.Id == userId && u.Activo && u.TokenVersion == tokenVersion && u.Propietario != null && u.Propietario.Activo)
+                    .Select(u => new AuthenticatedUserContext(u.Id, u.PropietarioId, u.RolId, u.EsPropietario, u.TokenVersion, u.Correo))
+                    .SingleOrDefaultAsync();
+                if (verifiedContext is null)
+                {
+                    context.Fail("Sesión inválida o revocada.");
+                    return;
+                }
+                context.HttpContext.Items[AuthenticatedUserContext.HttpContextItemKey] = verifiedContext;
             }
         };
     });
