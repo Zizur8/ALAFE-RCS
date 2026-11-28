@@ -1,4 +1,5 @@
 using System.Data;
+using System.Globalization;
 using Alafe.Api.Data;
 using Alafe.Api.DTOs.Configuracion;
 using Alafe.Api.Models;
@@ -9,6 +10,135 @@ namespace Alafe.Api.Services;
 
 public sealed class ConfiguracionService(AlafeDbContext db, ICurrentUserService currentUser) : IConfiguracionService
 {
+    private static readonly string[] DateFormats = ["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"];
+
+    public async Task<ConfiguracionPropietarioDto> GetConfiguracionGlobalAsync(CancellationToken cancellationToken = default)
+    {
+        var ownerId = OwnerId;
+        var config = await db.ConfiguracionesPropietario.SingleOrDefaultAsync(x => x.PropietarioId == ownerId, cancellationToken);
+        if (config is null)
+        {
+            if (!await db.Propietarios.AnyAsync(x => x.Id == ownerId, cancellationToken)) throw new KeyNotFoundException("No se encontró el espacio de trabajo.");
+            config = new ConfiguracionPropietario { PropietarioId = ownerId, FechaActualizacion = DateTime.UtcNow };
+            db.ConfiguracionesPropietario.Add(config);
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        return ToGlobalDto(config);
+    }
+
+    public async Task<ConfiguracionPropietarioDto> UpdateConfiguracionGlobalAsync(ActualizarConfiguracionPropietarioRequest request, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.MonedaPredeterminadaCodigo)) throw new ArgumentException("MonedaPredeterminadaCodigo es obligatorio.");
+        if (string.IsNullOrWhiteSpace(request.FormatoFecha)) throw new ArgumentException("FormatoFecha es obligatorio.");
+        var code = request.MonedaPredeterminadaCodigo.Trim().ToUpperInvariant();
+        if (!await db.Monedas.AnyAsync(x => x.Codigo == code, cancellationToken)) throw new ArgumentException("La moneda indicada no existe.");
+        if (!DateFormats.Contains(request.FormatoFecha, StringComparer.Ordinal)) throw new ArgumentException("FormatoFecha debe ser 'DD/MM/YYYY', 'MM/DD/YYYY' o 'YYYY-MM-DD'.");
+        var config = await db.ConfiguracionesPropietario.SingleOrDefaultAsync(x => x.PropietarioId == OwnerId, cancellationToken);
+        if (config is null) config = new ConfiguracionPropietario { PropietarioId = OwnerId };
+        config.MonedaPredeterminadaCodigo = code;
+        config.FormatoFecha = request.FormatoFecha;
+        config.MostrarFinesDeSemanaPrimero = request.MostrarFinesDeSemanaPrimero;
+        config.FechaActualizacion = DateTime.UtcNow;
+        if (db.Entry(config).State == EntityState.Detached) db.ConfiguracionesPropietario.Add(config);
+        await db.SaveChangesAsync(cancellationToken);
+        return ToGlobalDto(config);
+    }
+
+    public async Task<ConfiguracionOperativaAgendaDto> GetConfiguracionAgendaAsync(int agendaId, CancellationToken cancellationToken = default)
+    {
+        var a = await db.Agendas.AsNoTracking().SingleOrDefaultAsync(x => x.Id == agendaId && x.PropietarioId == OwnerId, cancellationToken)
+            ?? throw new KeyNotFoundException("La agenda no existe en este espacio de trabajo.");
+        var horarios = await db.AgendaHorariosDefault.AsNoTracking().Where(x => x.AgendaId == agendaId).ToListAsync(cancellationToken);
+        return ToOperativaDto(a, horarios);
+    }
+
+    public async Task<ConfiguracionOperativaAgendaDto> UpdateConfiguracionAgendaAsync(int agendaId, ActualizarConfiguracionOperativaAgendaRequest request, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.MonedaCodigo)) throw new ArgumentException("MonedaCodigo es obligatorio.");
+        if (string.IsNullOrWhiteSpace(request.ZonaHoraria)) throw new ArgumentException("ZonaHoraria es obligatoria.");
+        var note = Clean(request.NotaGeneral);
+        if (note?.Length > 500) throw new ArgumentException("NotaGeneral no puede superar 500 caracteres.");
+        var validatedSchedules = ValidateHorarios(request.HorariosPorDia);
+        var currency = request.MonedaCodigo.Trim().ToUpperInvariant();
+        if (!await db.Monedas.AnyAsync(x => x.Codigo == currency, cancellationToken)) throw new ArgumentException("La moneda indicada no existe.");
+        var zone = request.ZonaHoraria.Trim();
+        if (!TimeZoneInfo.TryFindSystemTimeZoneById(zone, out _)) throw new ArgumentException("La zona horaria indicada no es válida.");
+
+        await using var tx = await db.Database.BeginTransactionAsync(cancellationToken);
+        var a = await db.Agendas.SingleOrDefaultAsync(x => x.Id == agendaId && x.PropietarioId == OwnerId, cancellationToken)
+            ?? throw new KeyNotFoundException("La agenda no existe en este espacio de trabajo.");
+        var oldNote = a.NotaGeneral;
+        a.NombreComercial = Clean(request.NombreComercial);
+        a.MonedaCodigo = currency;
+        a.ZonaHoraria = zone;
+        a.ExigirAnticipoParaConfirmar = request.ExigirAnticipoParaConfirmar;
+        a.PermitirTraslapes = request.PermitirTraslapes;
+        a.NotaGeneral = note;
+        a.MostrarNotaGeneral = request.MostrarNotaGeneral;
+        if (!string.Equals(oldNote, note, StringComparison.Ordinal))
+        {
+            a.NotaGeneralActualizadaEn = DateTime.UtcNow;
+            a.NotaGeneralUsuarioId = UserId;
+        }
+        a.FechaActualizacion = DateTime.UtcNow;
+        var existing = await db.AgendaHorariosDefault.Where(x => x.AgendaId == agendaId).ToDictionaryAsync(x => x.DiaSemana, cancellationToken);
+        var schedules = new List<AgendaHorarioDefault>(7);
+        foreach (var submitted in validatedSchedules)
+        {
+            if (existing.TryGetValue(submitted.DiaSemana, out var stored))
+            {
+                stored.Activo = submitted.Activo;
+                stored.HoraInicio = submitted.HoraInicio;
+                stored.HoraFin = submitted.HoraFin;
+                schedules.Add(stored);
+            }
+            else
+            {
+                submitted.AgendaId = agendaId;
+                db.AgendaHorariosDefault.Add(submitted);
+                schedules.Add(submitted);
+            }
+        }
+        await db.SaveChangesAsync(cancellationToken);
+        await tx.CommitAsync(cancellationToken);
+        return ToOperativaDto(a, schedules);
+    }
+
+    private static ConfiguracionPropietarioDto ToGlobalDto(ConfiguracionPropietario x) => new(x.PropietarioId, x.MonedaPredeterminadaCodigo, x.FormatoFecha, x.MostrarFinesDeSemanaPrimero, x.FechaActualizacion);
+    private static ConfiguracionOperativaAgendaDto ToOperativaDto(Agenda x, IEnumerable<AgendaHorarioDefault> horarios)
+    {
+        var byDay = horarios.ToDictionary(h => h.DiaSemana);
+        var days = Enumerable.Range(1, 7).Select(day =>
+        {
+            var dia = (byte)day;
+            if (!byDay.TryGetValue(dia, out var horario))
+                return new AgendaHorarioDefaultDto(dia, true, "10:00", "22:00");
+            return new AgendaHorarioDefaultDto(dia, horario.Activo,
+                TimeOnly.FromTimeSpan(horario.HoraInicio).ToString("HH:mm", CultureInfo.InvariantCulture),
+                TimeOnly.FromTimeSpan(horario.HoraFin).ToString("HH:mm", CultureInfo.InvariantCulture));
+        }).ToList();
+        return new ConfiguracionOperativaAgendaDto(x.Id, x.Nombre, x.NombreComercial, x.MonedaCodigo, x.ZonaHoraria,
+            x.ExigirAnticipoParaConfirmar, x.PermitirTraslapes, x.NotaGeneral, x.MostrarNotaGeneral, days);
+    }
+
+    private static List<AgendaHorarioDefault> ValidateHorarios(IReadOnlyCollection<ActualizarAgendaHorarioDefaultRequest>? schedules)
+    {
+        if (schedules is null || schedules.Count != 7 || schedules.Select(x => x.DiaSemana).Distinct().Count() != 7 ||
+            schedules.Any(x => x.DiaSemana is < 1 or > 7))
+            throw new ArgumentException("HorariosPorDia debe contener exactamente los 7 días únicos, del 1 al 7.");
+
+        var result = new List<AgendaHorarioDefault>(7);
+        foreach (var item in schedules.OrderBy(x => x.DiaSemana))
+        {
+            if (!TimeOnly.TryParseExact(item.HoraInicio, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var start) ||
+                !TimeOnly.TryParseExact(item.HoraFin, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var end))
+                throw new ArgumentException("Las horas deben tener el formato HH:mm de 24 horas.");
+            if (start == end) throw new ArgumentException("HoraFin debe ser distinta de HoraInicio.");
+            result.Add(new AgendaHorarioDefault { DiaSemana = item.DiaSemana, Activo = item.Activo, HoraInicio = start.ToTimeSpan(), HoraFin = end.ToTimeSpan() });
+        }
+        return result;
+    }
+
     public async Task<ConfiguracionGeneralDto> GetGeneralAsync(CancellationToken cancellationToken = default)
     {
         var ownerId = OwnerId;
@@ -90,6 +220,7 @@ public sealed class ConfiguracionService(AlafeDbContext db, ICurrentUserService 
             Activo = request.Activo,
             FechaCreacion = now
         };
+        agenda.HorariosDefault = AgendaHorarioDefault.CrearDefaults(agenda);
         db.Agendas.Add(agenda);
         await db.SaveChangesAsync(cancellationToken);
         await tx.CommitAsync(cancellationToken);

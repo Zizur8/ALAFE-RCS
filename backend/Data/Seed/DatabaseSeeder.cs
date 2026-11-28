@@ -22,6 +22,8 @@ public sealed class DatabaseSeeder(AlafeDbContext db, IPasswordHasher<Usuario> h
         var owner = new Propietario { PlanId=plan.Id, NombreEspacioTrabajo="Espacio Demo ALAFE", CorreoTitular="admin@alafe.local", PaisCodigo="MX", TelefonoPaisCodigo="MX", TelefonoContacto="8670000000", EstadoSuscripcion="Prueba", Activo=true, FechaInicioSuscripcion=DateTime.UtcNow, FechaCreacion=DateTime.UtcNow };
         db.Propietarios.Add(owner);
         await db.SaveChangesAsync(cancellationToken);
+        db.ConfiguracionesPropietario.Add(new ConfiguracionPropietario { PropietarioId = owner.Id, MonedaPredeterminadaCodigo = "MXN", FormatoFecha = "DD/MM/YYYY", FechaActualizacion = DateTime.UtcNow });
+        await db.SaveChangesAsync(cancellationToken);
 
         var permisos = await db.Permisos.ToDictionaryAsync(x=>x.Clave, cancellationToken);
         var admin = new Rol { PropietarioId=owner.Id, Nombre="Administrador", Descripcion="Control total del espacio de trabajo.", EsSistema=true, Activo=true, FechaCreacion=DateTime.UtcNow };
@@ -36,7 +38,9 @@ public sealed class DatabaseSeeder(AlafeDbContext db, IPasswordHasher<Usuario> h
         user.PasswordHash = hasher.HashPassword(user,"Admin123!");
         db.Usuarios.Add(user);
         await db.SaveChangesAsync(cancellationToken);
-        db.Agendas.Add(new Agenda { PropietarioId=owner.Id, Nombre="Alberca Las Palmas", MonedaCodigo="MXN", ZonaHoraria="America/Matamoros", NombreEventoDefault="Evento", MostrarNotaGeneral=true, NotaGeneral="Bienvenidos a Alberca Las Palmas.", NotaGeneralActualizadaEn=DateTime.UtcNow, NotaGeneralUsuarioId=user.Id, HoraAperturaDefault=new TimeSpan(9,0,0), HoraCierreDefault=new TimeSpan(22,0,0), Activo=true, FechaCreacion=DateTime.UtcNow });
+        var agenda = new Agenda { PropietarioId=owner.Id, Nombre="Alberca Las Palmas", MonedaCodigo="MXN", ZonaHoraria="America/Matamoros", NombreEventoDefault="Evento", MostrarNotaGeneral=true, NotaGeneral="Bienvenidos a Alberca Las Palmas.", NotaGeneralActualizadaEn=DateTime.UtcNow, NotaGeneralUsuarioId=user.Id, HoraAperturaDefault=new TimeSpan(9,0,0), HoraCierreDefault=new TimeSpan(22,0,0), Activo=true, FechaCreacion=DateTime.UtcNow };
+        agenda.HorariosDefault = AgendaHorarioDefault.CrearDefaults(agenda);
+        db.Agendas.Add(agenda);
         await db.SaveChangesAsync(cancellationToken);
         await tx.CommitAsync(cancellationToken);
         logger.LogInformation("Espacio demo ALAFE creado con roles, permisos, usuario titular y agenda.");

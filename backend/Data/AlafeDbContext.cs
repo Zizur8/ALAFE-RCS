@@ -20,10 +20,12 @@ public class AlafeDbContext : DbContext
     public DbSet<Plan> Planes => Set<Plan>();
     public DbSet<Permiso> Permisos => Set<Permiso>();
     public DbSet<Propietario> Propietarios => Set<Propietario>();
+    public DbSet<ConfiguracionPropietario> ConfiguracionesPropietario => Set<ConfiguracionPropietario>();
     public DbSet<Rol> Roles => Set<Rol>();
     public DbSet<RolPermiso> RolPermisos => Set<RolPermiso>();
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<Agenda> Agendas => Set<Agenda>();
+    public DbSet<AgendaHorarioDefault> AgendaHorariosDefault => Set<AgendaHorarioDefault>();
     public DbSet<UsuarioAgenda> UsuarioAgendas => Set<UsuarioAgenda>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Cliente> Clientes => Set<Cliente>();

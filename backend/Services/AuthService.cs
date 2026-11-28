@@ -49,6 +49,14 @@ public sealed class AuthService(AlafeDbContext db, IPasswordHasher<Usuario> pass
             FechaInicioSuscripcion = now, Activo = true, FechaCreacion = now };
         db.Propietarios.Add(owner);
         await db.SaveChangesAsync(ct);
+        db.ConfiguracionesPropietario.Add(new ConfiguracionPropietario
+        {
+            PropietarioId = owner.Id,
+            MonedaPredeterminadaCodigo = monedaCodigo,
+            FormatoFecha = "DD/MM/YYYY",
+            MostrarFinesDeSemanaPrimero = false,
+            FechaActualizacion = now
+        });
 
         var admin = new Rol { PropietarioId = owner.Id, Nombre = "Administrador", Descripcion = "Control total del espacio de trabajo.", EsSistema = true, Activo = true, FechaCreacion = now };
         var receptionist = new Rol { PropietarioId = owner.Id, Nombre = "Recepcionista", Descripcion = "Operación diaria de eventos y clientes.", EsSistema = true, Activo = true, FechaCreacion = now };
@@ -67,9 +75,11 @@ public sealed class AuthService(AlafeDbContext db, IPasswordHasher<Usuario> pass
         user.PasswordHash = passwordHasher.HashPassword(user, request.Password);
         db.Usuarios.Add(user);
         await db.SaveChangesAsync(ct);
-        db.Agendas.Add(new Agenda { PropietarioId = owner.Id, Nombre = request.NombreAgenda.Trim(), MonedaCodigo = monedaCodigo,
+        var agenda = new Agenda { PropietarioId = owner.Id, Nombre = request.NombreAgenda.Trim(), MonedaCodigo = monedaCodigo,
             ZonaHoraria = zona, NombreEventoDefault = string.IsNullOrWhiteSpace(request.NombreEventoDefault) ? "Evento" : request.NombreEventoDefault.Trim(),
-            Activo = true, FechaCreacion = now });
+            Activo = true, FechaCreacion = now };
+        agenda.HorariosDefault = AgendaHorarioDefault.CrearDefaults(agenda);
+        db.Agendas.Add(agenda);
         await db.SaveChangesAsync(ct);
         var response = await CreateSessionAsync(user, false, ip, userAgent, ct);
         await tx.CommitAsync(ct);
