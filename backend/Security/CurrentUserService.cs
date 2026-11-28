@@ -4,12 +4,15 @@ namespace Alafe.Api.Security;
 
 public sealed class CurrentUserService(IHttpContextAccessor accessor) : ICurrentUserService
 {
+    private HttpContext? Context => accessor.HttpContext;
     private ClaimsPrincipal? User => accessor.HttpContext?.User;
-    public int? UsuarioId => ReadInt(ClaimTypes.NameIdentifier, "sub");
-    public int? PropietarioId => ReadInt("propietarioId");
-    public int? RolId => ReadInt("rolId");
-    public bool EsPropietario => bool.TryParse(User?.FindFirst("esPropietario")?.Value, out var value) && value;
-    public int? TokenVersion => ReadInt("tokenVersion");
+    private AuthenticatedUserContext? VerifiedContext => Context?.Items.TryGetValue(AuthenticatedUserContext.HttpContextItemKey, out var value) == true
+        ? value as AuthenticatedUserContext : null;
+    public int? UsuarioId => VerifiedContext?.UsuarioId ?? ReadInt("sub", ClaimTypes.NameIdentifier);
+    public int? PropietarioId => VerifiedContext?.PropietarioId;
+    public int? RolId => VerifiedContext?.RolId;
+    public bool EsPropietario => VerifiedContext?.EsPropietario ?? false;
+    public int? TokenVersion => VerifiedContext?.TokenVersion ?? ReadInt("tv");
     public bool IsAuthenticated => User?.Identity?.IsAuthenticated == true;
     private int? ReadInt(params string[] types)
     {

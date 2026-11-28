@@ -142,13 +142,11 @@ public sealed class AuthService(AlafeDbContext db, IPasswordHasher<Usuario> pass
         var permissions = await db.Roles.AsNoTracking().Where(r => r.Id == user.RolId && r.PropietarioId == user.PropietarioId && r.Activo)
             .SelectMany(r => r.RolPermisos).Select(rp => rp.Permiso!.Clave).Distinct().OrderBy(x => x).ToListAsync(ct);
         var agendas = await agendaAccess.QueryAccessibleAgendas(usuarioId).OrderBy(a => a.Nombre)
-            .Select(a => new AgendaResponse(a.Id, a.Nombre, a.MonedaCodigo, a.ZonaHoraria, a.NombreEventoDefault, a.MostrarNotaGeneral, a.NotaGeneral)).ToListAsync(ct);
+            .Select(a => new MeAgendaResponse(a.Id, a.Nombre, a.MonedaCodigo, a.ZonaHoraria, a.NombreEventoDefault)).ToListAsync(ct);
         var owner = user.Propietario;
         var plan = owner.Plan;
-        return new MeResponse(user.Id, user.NombreCompleto, user.Correo, user.TelefonoPaisCodigo, user.Telefono, user.EsPropietario,
-            user.TemaVisual, user.VistaAgendaDefault, user.RolId, user.Rol.Nombre, owner.Id, owner.NombreEspacioTrabajo, owner.PaisCodigo,
-            owner.EstadoSuscripcion, new PlanResponse(plan.Id, plan.Codigo, plan.Nombre, plan.LimiteAgendas, plan.LimiteUsuarios,
-                plan.IncluyeMovimientos, plan.IncluyeReportes, plan.IncluyeInventario), permissions, agendas);
+        return new MeResponse(user.NombreCompleto, user.TemaVisual, user.VistaAgendaDefault, user.Rol.Nombre, user.EsPropietario,
+            permissions, new MePlanResponse(plan.Nombre, plan.IncluyeMovimientos, plan.IncluyeReportes, plan.IncluyeInventario), agendas);
     }
 
     private async Task<AuthResponse> CreateSessionAsync(Usuario user, bool rememberMe, string? ip, string? userAgent, CancellationToken ct)
@@ -160,8 +158,7 @@ public sealed class AuthService(AlafeDbContext db, IPasswordHasher<Usuario> pass
         db.RefreshTokens.Add(new RefreshToken { UsuarioId = user.Id, TokenHash = jwt.ComputeHash(refreshToken), Recordarme = rememberMe,
             ExpiraEn = refreshExpires.UtcDateTime, CreadoEn = DateTime.UtcNow, IpCreacion = Truncate(ip, 45), UserAgent = Truncate(userAgent, 256) });
         await db.SaveChangesAsync(ct);
-        var me = await GetMeAsync(user.Id, ct);
-        return new AuthResponse(accessToken, accessExpires, refreshToken, refreshExpires, me);
+        return new AuthResponse(accessToken, accessExpires, refreshToken, refreshExpires);
     }
 
     private static string? Truncate(string? value, int length) => value is null || value.Length <= length ? value : value[..length];
