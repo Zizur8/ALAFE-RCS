@@ -63,3 +63,9 @@ Thumbs.db
 *.log
 .cache/
 coverage/
+
+# =========================
+# Docker
+# =========================
+docker-compose.yml
+docker-compose.override.yml

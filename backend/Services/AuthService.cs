@@ -15,7 +15,7 @@ public sealed class AuthService(AlafeDbContext db, IPasswordHasher<Usuario> pass
     private static readonly string[] ReceptionistPermissions = ["eventos.consultar", "eventos.crear", "eventos.editar", "clientes.consultar", "clientes.gestionar"];
     private readonly JwtOptions _jwtOptions = jwtOptions.Value;
 
-    public async Task<AuthResponse> RegisterOwnerAsync(RegisterOwnerRequest request, string? ip, string? userAgent, CancellationToken ct = default)
+    public async Task<AuthSessionResult> RegisterOwnerAsync(RegisterOwnerRequest request, string? ip, string? userAgent, CancellationToken ct = default)
     {
         var correo = request.Correo.Trim().ToLowerInvariant();
         if (await db.Usuarios.AnyAsync(u => u.Correo.ToLower() == correo, ct)) throw new ConflictException("Ya existe una cuenta con ese correo.");
@@ -76,7 +76,7 @@ public sealed class AuthService(AlafeDbContext db, IPasswordHasher<Usuario> pass
         return response;
     }
 
-    public async Task<AuthResponse> LoginAsync(LoginRequest request, string? ip, string? userAgent, CancellationToken ct = default)
+    public async Task<AuthSessionResult> LoginAsync(LoginRequest request, string? ip, string? userAgent, CancellationToken ct = default)
     {
         var correo = request.Correo.Trim().ToLowerInvariant();
         var user = await db.Usuarios.Include(u => u.Propietario).Include(u => u.Rol).SingleOrDefaultAsync(u => u.Correo.ToLower() == correo, ct);
@@ -88,9 +88,9 @@ public sealed class AuthService(AlafeDbContext db, IPasswordHasher<Usuario> pass
         return await CreateSessionAsync(user, request.Recordarme, ip, userAgent, ct);
     }
 
-    public async Task<AuthResponse> RefreshAsync(RefreshTokenRequest request, string? ip, string? userAgent, CancellationToken ct = default)
+    public async Task<AuthSessionResult> RefreshAsync(string refreshToken, string? ip, string? userAgent, CancellationToken ct = default)
     {
-        var hash = jwt.ComputeHash(request.RefreshToken);
+        var hash = jwt.ComputeHash(refreshToken);
         var stored = await db.RefreshTokens.Include(x => x.Usuario).ThenInclude(u => u!.Propietario).SingleOrDefaultAsync(x => x.TokenHash == hash, ct);
         if (stored is null) throw new UnauthorizedAccessException("La sesión no es válida.");
         if (stored.RevocadoEn is not null)
@@ -115,7 +115,7 @@ public sealed class AuthService(AlafeDbContext db, IPasswordHasher<Usuario> pass
         return response;
     }
 
-    public async Task LogoutAsync(int usuarioId, LogoutRequest request, CancellationToken ct = default)
+    public async Task LogoutAsync(int usuarioId, string? refreshToken, LogoutRequest request, CancellationToken ct = default)
     {
         var user = await db.Usuarios.SingleOrDefaultAsync(u => u.Id == usuarioId, ct) ?? throw new KeyNotFoundException("El usuario no existe.");
         var now = DateTime.UtcNow;
@@ -125,9 +125,9 @@ public sealed class AuthService(AlafeDbContext db, IPasswordHasher<Usuario> pass
             var active = await db.RefreshTokens.Where(t => t.UsuarioId == usuarioId && t.RevocadoEn == null).ToListAsync(ct);
             foreach (var token in active) token.RevocadoEn = now;
         }
-        else if (!string.IsNullOrWhiteSpace(request.RefreshToken))
+        else if (!string.IsNullOrWhiteSpace(refreshToken))
         {
-            var hash = jwt.ComputeHash(request.RefreshToken);
+            var hash = jwt.ComputeHash(refreshToken);
             var token = await db.RefreshTokens.SingleOrDefaultAsync(t => t.TokenHash == hash && t.UsuarioId == usuarioId && t.RevocadoEn == null, ct);
             if (token is not null) token.RevocadoEn = now;
         }
@@ -149,7 +149,7 @@ public sealed class AuthService(AlafeDbContext db, IPasswordHasher<Usuario> pass
             permissions, new MePlanResponse(plan.Nombre, plan.IncluyeMovimientos, plan.IncluyeReportes, plan.IncluyeInventario), agendas);
     }
 
-    private async Task<AuthResponse> CreateSessionAsync(Usuario user, bool rememberMe, string? ip, string? userAgent, CancellationToken ct)
+    private async Task<AuthSessionResult> CreateSessionAsync(Usuario user, bool rememberMe, string? ip, string? userAgent, CancellationToken ct)
     {
         var (accessToken, accessExpires) = jwt.GenerateAccessToken(user);
         var refreshToken = jwt.GenerateRefreshToken();
@@ -158,7 +158,7 @@ public sealed class AuthService(AlafeDbContext db, IPasswordHasher<Usuario> pass
         db.RefreshTokens.Add(new RefreshToken { UsuarioId = user.Id, TokenHash = jwt.ComputeHash(refreshToken), Recordarme = rememberMe,
             ExpiraEn = refreshExpires.UtcDateTime, CreadoEn = DateTime.UtcNow, IpCreacion = Truncate(ip, 45), UserAgent = Truncate(userAgent, 256) });
         await db.SaveChangesAsync(ct);
-        return new AuthResponse(accessToken, accessExpires, refreshToken, refreshExpires);
+        return new AuthSessionResult(accessToken, accessExpires, refreshToken, refreshExpires);
     }
 
     private static string? Truncate(string? value, int length) => value is null || value.Length <= length ? value : value[..length];
